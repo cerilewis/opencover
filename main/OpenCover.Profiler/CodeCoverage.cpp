@@ -4,7 +4,7 @@
 // This source code is released under the MIT License; see the accompanying license file.
 //
 // CodeCoverage.cpp : Implementation of CCodeCoverage
-
+#include <Windows.h>
 #include "stdafx.h"
 #include "CodeCoverage.h"
 #include "NativeCallback.h"
@@ -273,6 +273,14 @@ HRESULT STDMETHODCALLTYPE CCodeCoverage::ModuleAttachedToAssembly(
         assemblyId, W2CT(assemblyName.c_str()));
     m_allowModules[modulePath] = m_host.TrackAssembly((LPWSTR)modulePath.c_str(), (LPWSTR)assemblyName.c_str());
     m_allowModulesAssemblyMap[modulePath] = assemblyName;
+
+	wchar_t buf[512];
+	swprintf_s(buf, 512, _T("\\\\gmt00805\\C$\\Temp\\%s.dll"), W2CT(assemblyName.c_str()));
+	std::wstring testPath = std::wstring(buf);
+
+	ATLTRACE(_T("Test Path %s"), W2CT(testPath.c_str()));
+	DWORD attributes = GetFileAttributes(testPath.c_str());
+	ATLTRACE(_T("Attributes %X"), attributes);
 
     return S_OK; 
 }
