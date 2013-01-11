@@ -74,6 +74,10 @@ HRESULT STDMETHODCALLTYPE CCodeCoverage::Initialize(
 
     m_useOldStyle = (tstring(instrumentation) == _T("oldSchool"));
 
+	TCHAR symbolDir[1024] = {0};
+	::GetEnvironmentVariable(_T("OpenCover_Profiler_SymbolDir"), symbolDir, 1024);
+	ATLTRACE(_T("    ::Initialize(...) => symbolDir = %s"), symbolDir);
+
     if (!m_host.Initialise(key, ns))
     {
         RELTRACE(_T("    ::Initialize => Failed to initialise the profiler communications -> GetLastError() => %d"), ::GetLastError());
@@ -275,12 +279,14 @@ HRESULT STDMETHODCALLTYPE CCodeCoverage::ModuleAttachedToAssembly(
     m_allowModulesAssemblyMap[modulePath] = assemblyName;
 
 	wchar_t buf[512];
-	swprintf_s(buf, 512, _T("\\\\gmt00805\\C$\\Temp\\%s.dll"), W2CT(assemblyName.c_str()));
+	swprintf_s(buf, 512, _T("C:\\Temp\\%s.dll"), W2CT(assemblyName.c_str()));
 	std::wstring testPath = std::wstring(buf);
 
+
 	ATLTRACE(_T("Test Path %s"), W2CT(testPath.c_str()));
-	DWORD attributes = GetFileAttributes(testPath.c_str());
-	ATLTRACE(_T("Attributes %X"), attributes);
+	ATLTRACE(_T("File Exists %d"), GetFileExists((LPWSTR)testPath.c_str()));
+	/*DWORD attributes = GetFileAttributes(testPath.c_str());
+	ATLTRACE(_T("Attributes %X"), attributes);*/
 
     return S_OK; 
 }
@@ -465,6 +471,16 @@ HRESULT STDMETHODCALLTYPE CCodeCoverage::JITCompilationStarted(
     }
     
     return S_OK; 
+}
+
+bool CCodeCoverage::GetFileExists(WCHAR* pFileName)
+{
+	DWORD attributes = GetFileAttributes(pFileName);
+	if (attributes == INVALID_FILE_ATTRIBUTES)
+	{
+		return 0;
+	}
+	return 1;
 }
 
 void CCodeCoverage::InstrumentMethod(ModuleID moduleId, Method& method,  std::vector<SequencePoint> seqPoints, std::vector<BranchPoint> brPoints)
