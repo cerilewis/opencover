@@ -29,6 +29,7 @@ namespace OpenCover.Framework.Service
 
         public bool TrackAssembly(string modulePath, string assemblyName)
         {
+            Trace.Write(String.Format("TrackAssembly '{0}' '{1}'", modulePath, assemblyName));
             if (_persistance.IsTracking(modulePath)) return true;
             Module module = null;
             var builder = _instrumentationModelBuilderFactory.CreateModelBuilder(modulePath, assemblyName);
@@ -50,28 +51,34 @@ namespace OpenCover.Framework.Service
                 module = builder.BuildModuleTestModel(module, false);
             }
             _persistance.PersistModule(module);
-            return !module.ShouldSerializeSkippedDueTo();
+            var trackAssembly = !module.ShouldSerializeSkippedDueTo();
+            Trace.Write(String.Format("Tracking '{0}' '{1}' {2}", modulePath, assemblyName, trackAssembly));
+            return trackAssembly;
         }
 
         public bool GetBranchPoints(string modulePath, string assemblyName, int functionToken, out BranchPoint[] instrumentPoints)
         {
+            Trace.WriteLine(String.Format("GetBranchPoints '{0}' '{1}' {2}", modulePath, assemblyName, functionToken));
             BranchPoint[] points = null;
 
             var ret = GetPoints(() => _persistance.GetBranchPointsForFunction(modulePath, functionToken, out points),
                     modulePath, assemblyName, functionToken, out instrumentPoints);
 
             instrumentPoints = points;
+            Trace.WriteLine(String.Format("Tracking GetBranchPoints '{0}' '{1}' {2} {3}", modulePath, assemblyName, functionToken, ret));
             return ret;
         }
 
         public bool GetSequencePoints(string modulePath, string assemblyName, int functionToken, out InstrumentationPoint[] instrumentPoints)
         {
+            Trace.WriteLine(String.Format("GetSequencePoints '{0}' '{1}' {2}", modulePath, assemblyName, functionToken));
             InstrumentationPoint[] points = null;
 
             var ret = GetPoints(() => _persistance.GetSequencePointsForFunction(modulePath, functionToken, out points),
                                 modulePath, assemblyName, functionToken, out instrumentPoints);
 
             instrumentPoints = points;
+            Trace.WriteLine(String.Format("Tracking GetSequencePoints '{0}' '{1}' {2} {3}", modulePath, assemblyName, functionToken, ret));
             return ret;
         }
 
@@ -94,7 +101,11 @@ namespace OpenCover.Framework.Service
 
         public bool TrackMethod(string modulePath, string assemblyName, int functionToken, out uint uniqueId)
         {
-            return _persistance.GetTrackingMethod(modulePath, assemblyName,functionToken, out uniqueId);
+            //Trace.WriteLine(String.Format("TrackMethod '{0}' '{1}' {2}", modulePath, assemblyName, functionToken));
+            var trackingMethod = _persistance.GetTrackingMethod(modulePath, assemblyName, functionToken, out uniqueId);
+            //Trace.WriteLine(String.Format("Tracking TrackMethod '{0}' '{1}' {2} {3}", modulePath, assemblyName, functionToken, trackingMethod));
+
+            return trackingMethod;
         }
     }
 }

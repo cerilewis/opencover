@@ -50,6 +50,21 @@ BOOL CCodeCoverage::GetTokenAndModule(FunctionID funcId, mdToken& functionToken,
     COM_FAIL_MSG_RETURN_OTHER(m_profilerInfo2->GetFunctionInfo2(funcId, NULL, NULL, &moduleId, &functionToken, 0, NULL, NULL), FALSE,
          _T("    ::GetTokenAndModule(...) => GetFunctionInfo2 => 0x%X"));
     modulePath = GetModulePath(moduleId, pAssemblyId);
+	std::wstring assemblyName = GetAssemblyName(*pAssemblyId);
+	if (modulePath.length() == 0 && m_symbolDir.length()>0)
+	{
+		wchar_t buf[512];
+		swprintf_s(buf, 512, _T("%s%s.dll"), W2CT(m_symbolDir.c_str()), W2CT(assemblyName.c_str()));
+		std::wstring testPath = std::wstring(buf);
+
+		//ATLTRACE(_T("Test Path %s"), W2CT(testPath.c_str()));
+		if (GetFileExists((LPWSTR)testPath.c_str()))
+		{
+			modulePath.assign(testPath);
+			ATLTRACE(_T("    ::GetTokenAndModule(...) updated modulePath"));
+		}
+	}
+
     return TRUE;
 }
 
