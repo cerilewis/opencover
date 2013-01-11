@@ -103,6 +103,9 @@ namespace OpenCover.Framework
                     case "targetdir":
                         TargetDir = GetArgumentValue("targetdir");
                         break;
+                    case "symboldir":
+                        SymbolDir = this.GetArgumentValue("symboldir");
+                        break;
                     case "targetargs":
                         TargetArgs = GetArgumentValue("targetargs");
                         break;
@@ -234,6 +237,11 @@ namespace OpenCover.Framework
         /// The working directory that the action is to take place
         /// </summary>
         public string TargetDir { get; private set; }
+
+        /// <summary>
+        /// The directory to search for for debug symbol files (pdb)
+        /// </summary>
+        public string SymbolDir { get; private set; }
 
         /// <summary>
         /// The arguments that are to be passed to the Target

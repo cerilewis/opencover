@@ -20,6 +20,11 @@ namespace OpenCover.Framework
         string TargetDir { get; }
 
         /// <summary>
+        /// The directory to search for for debug symbol files (pdb)
+        /// </summary>
+        string SymbolDir { get; }
+
+        /// <summary>
         /// If specified then results to be merged by matching hash 
         /// </summary>
         bool MergeByHash { get; }
