@@ -77,6 +77,7 @@ HRESULT STDMETHODCALLTYPE CCodeCoverage::Initialize(
 	TCHAR symbolDir[1024] = {0};
 	::GetEnvironmentVariable(_T("OpenCover_Profiler_SymbolDir"), symbolDir, 1024);
 	ATLTRACE(_T("    ::Initialize(...) => symbolDir = %s"), symbolDir);
+	m_symbolDir = std::wstring(symbolDir);
 
     if (!m_host.Initialise(key, ns))
     {
@@ -272,19 +273,27 @@ HRESULT STDMETHODCALLTYPE CCodeCoverage::ModuleAttachedToAssembly(
 {
     std::wstring modulePath = GetModulePath(moduleId);
     std::wstring assemblyName = GetAssemblyName(assemblyId);
-    ATLTRACE(_T("::ModuleAttachedToAssembly(...) => (%X => %s, %X => %s)"), 
+	if (modulePath.length() == 0 && m_symbolDir.length()>0)
+	{
+		wchar_t buf[512];
+		swprintf_s(buf, 512, _T("%s%s.dll"), W2CT(m_symbolDir.c_str()), W2CT(assemblyName.c_str()));
+		std::wstring testPath = std::wstring(buf);
+
+		//ATLTRACE(_T("Test Path %s"), W2CT(testPath.c_str()));
+		if (GetFileExists((LPWSTR)testPath.c_str()))
+		{
+			modulePath.assign(testPath);
+			ATLTRACE(_T("::ModuleAttachedToAssembly(...) updated modulePath"));
+		}
+	}
+
+	ATLTRACE(_T("::ModuleAttachedToAssembly(...) => (%X => %s, %X => %s)"), 
         moduleId, W2CT(modulePath.c_str()), 
         assemblyId, W2CT(assemblyName.c_str()));
+	
     m_allowModules[modulePath] = m_host.TrackAssembly((LPWSTR)modulePath.c_str(), (LPWSTR)assemblyName.c_str());
     m_allowModulesAssemblyMap[modulePath] = assemblyName;
 
-	wchar_t buf[512];
-	swprintf_s(buf, 512, _T("C:\\Temp\\%s.dll"), W2CT(assemblyName.c_str()));
-	std::wstring testPath = std::wstring(buf);
-
-
-	ATLTRACE(_T("Test Path %s"), W2CT(testPath.c_str()));
-	ATLTRACE(_T("File Exists %d"), GetFileExists((LPWSTR)testPath.c_str()));
 	/*DWORD attributes = GetFileAttributes(testPath.c_str());
 	ATLTRACE(_T("Attributes %X"), attributes);*/
 

@@ -100,7 +100,7 @@ namespace OpenCover.Test.Framework.Manager
                 standardMessageChunk.Set();
 
                 Thread.Sleep(new TimeSpan(0, 0, 0, 0, 100));
-            }, false);
+            }, false, string.Empty);
 
             // assert
             Container.GetMock<IMessageHandler>()
@@ -135,7 +135,7 @@ namespace OpenCover.Test.Framework.Manager
 
                 doExtra();
 
-            }, false);
+            }, false, string.Empty);
         }
     }
 }

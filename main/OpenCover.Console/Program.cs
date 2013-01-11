@@ -30,7 +30,7 @@ namespace OpenCover.Console
         {
             var returnCode = 0;
             var returnCodeOffset = 0;
-            var logger = LogManager.GetLogger(typeof (Bootstrapper));
+            var logger = LogManager.GetLogger(typeof(Bootstrapper));
             try
             {
                 CommandLineParser parser;
@@ -59,7 +59,17 @@ namespace OpenCover.Console
                             ProfilerRegistration.Register(parser.UserRegistration);
                             registered = true;
                         }
-                        var harness = (IProfilerManager) container.Container.Resolve(typeof (IProfilerManager), null);
+                        var harness = (IProfilerManager)container.Container.Resolve(typeof(IProfilerManager), null);
+
+                        var symbolDir = string.Empty;
+                        if (!string.IsNullOrEmpty(parser.SymbolDir))
+                        {
+                            symbolDir = parser.SymbolDir;
+                            if (symbolDir[symbolDir.Length - 1] != Path.DirectorySeparatorChar)
+                            {
+                                symbolDir += Path.DirectorySeparatorChar;
+                            }
+                        }
 
                         harness.RunProcess((environment) =>
                                                {
@@ -72,7 +82,7 @@ namespace OpenCover.Console
                                                    {
                                                        returnCode = RunProcess(parser, environment);
                                                    }
-                                               }, parser.Service);
+                                               }, parser.Service, symbolDir);
 
                         DisplayResults(persistance, parser, logger);
 
@@ -116,7 +126,7 @@ namespace OpenCover.Console
 
             if (service.Status != ServiceControllerStatus.Stopped)
             {
-                logger.ErrorFormat("The service '{0}' is already running. The profiler cannot attach to an already running service.", 
+                logger.ErrorFormat("The service '{0}' is already running. The profiler cannot attach to an already running service.",
                     parser.Target);
                 return;
             }
@@ -129,7 +139,7 @@ namespace OpenCover.Console
 
             try
             {
-                serviceEnvironment.PrepareServiceEnvironment(parser.Target, 
+                serviceEnvironment.PrepareServiceEnvironment(parser.Target,
                     (from string key in profilerEnvironment.Keys select string.Format("{0}={1}", key, profilerEnvironment[key])).ToArray());
 
                 // now start the service
@@ -139,7 +149,7 @@ namespace OpenCover.Console
                 service.WaitForStatus(ServiceControllerStatus.Running, new TimeSpan(0, 0, 30));
                 logger.InfoFormat("Service started '{0}'", parser.Target);
             }
-            finally 
+            finally
             {
                 // once the serice has started set the environment variables back - just in case
                 serviceEnvironment.ResetServiceEnvironment();
@@ -176,7 +186,7 @@ namespace OpenCover.Console
         private static void DisplayResults(IPersistance persistance, ICommandLine parser, ILog logger)
         {
             if (!logger.IsInfoEnabled) return;
- 
+
             var CoverageSession = persistance.CoverageSession;
 
             var totalClasses = 0;
@@ -202,7 +212,7 @@ namespace OpenCover.Console
             if (CoverageSession.Modules != null)
             {
                 foreach (var @class in
-                    from module in CoverageSession.Modules.Where(x=>x.Classes != null)
+                    from module in CoverageSession.Modules.Where(x => x.Classes != null)
                     from @class in module.Classes.Where(c => !c.ShouldSerializeSkippedDueTo())
                     select @class)
                 {
@@ -229,7 +239,7 @@ namespace OpenCover.Console
                         altTotalClasses += 1;
                     }
 
-                    foreach (var method in @class.Methods.Where(x=> !x.ShouldSerializeSkippedDueTo()))
+                    foreach (var method in @class.Methods.Where(x => !x.ShouldSerializeSkippedDueTo()))
                     {
                         if ((method.SequencePoints.Any(x => x.VisitCount > 0)))
                         {
@@ -259,7 +269,7 @@ namespace OpenCover.Console
 
             if (totalClasses > 0)
             {
-                
+
                 logger.InfoFormat("Visited Classes {0} of {1} ({2})", visitedClasses,
                                   totalClasses, (double)visitedClasses * 100.0 / (double)totalClasses);
                 logger.InfoFormat("Visited Methods {0} of {1} ({2})", visitedMethods,
@@ -396,11 +406,17 @@ namespace OpenCover.Console
                     {
                         System.Console.WriteLine("Service '{0}' cannot be found - have you specified your arguments correctly?", parser.Target);
                         return false;
-                    }                    
+                    }
                 }
                 else if (!File.Exists(Environment.ExpandEnvironmentVariables(parser.Target)))
                 {
                     System.Console.WriteLine("Target '{0}' cannot be found - have you specified your arguments correctly?", parser.Target);
+                    return false;
+                }
+
+                if (!string.IsNullOrEmpty(parser.SymbolDir) && !Directory.Exists(parser.SymbolDir))
+                {
+                    System.Console.WriteLine("SymbolDir '{0}' cannot be found - have you specified your arguments correctly?", parser.SymbolDir);
                     return false;
                 }
             }
