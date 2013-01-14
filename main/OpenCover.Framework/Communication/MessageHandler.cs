@@ -14,6 +14,8 @@ using SequencePoint = OpenCover.Framework.Model.SequencePoint;
 
 namespace OpenCover.Framework.Communication
 {
+    using OpenCover.Framework.Symbols;
+
     public interface IMessageHandler
     {
         int StandardMessage(MSG_Type msgType, IntPtr pinnedMemory, Action<int> chunkReady);
@@ -30,11 +32,14 @@ namespace OpenCover.Framework.Communication
         private readonly IMarshalWrapper _marshalWrapper;
         private readonly IMemoryManager _memoryManager;
 
-        public MessageHandler(IProfilerCommunication profilerCommunication, IMarshalWrapper marshalWrapper, IMemoryManager memoryManager)
+        private readonly IModuleLocator _moduleLocator;
+
+        public MessageHandler(IProfilerCommunication profilerCommunication, IMarshalWrapper marshalWrapper, IMemoryManager memoryManager, IModuleLocator moduleLocator)
         {
             _profilerCommunication = profilerCommunication;
             _marshalWrapper = marshalWrapper;
             _memoryManager = memoryManager;
+            _moduleLocator = moduleLocator;
         }
 
         public int StandardMessage(MSG_Type msgType, IntPtr pinnedMemory, Action<int> chunkReady)
@@ -45,6 +50,10 @@ namespace OpenCover.Framework.Communication
                 case MSG_Type.MSG_TrackAssembly:
                     {
                         var msgTA = _marshalWrapper.PtrToStructure<MSG_TrackAssembly_Request>(pinnedMemory);
+                        if (!String.IsNullOrEmpty(msgTA.modulePath) && msgTA.modulePath.StartsWith("@"))
+                        {
+                            msgTA.modulePath = this._moduleLocator.LocateForAssembly(msgTA.assemblyName);
+                        }
                         var responseTA = new MSG_TrackAssembly_Response();
                         responseTA.track = _profilerCommunication.TrackAssembly(msgTA.modulePath, msgTA.assemblyName);
                         _marshalWrapper.StructureToPtr(responseTA, pinnedMemory, false);
@@ -56,6 +65,10 @@ namespace OpenCover.Framework.Communication
                     {
                         var msgGSP = _marshalWrapper.PtrToStructure<MSG_GetSequencePoints_Request>(pinnedMemory);
                         InstrumentationPoint[] origPoints;
+                        if (!String.IsNullOrEmpty(msgGSP.modulePath) && msgGSP.modulePath.StartsWith("@"))
+                        {
+                            msgGSP.modulePath = this._moduleLocator.LocateForAssembly(msgGSP.assemblyName);
+                        }
                         var responseCSP = new MSG_GetSequencePoints_Response();
                         _profilerCommunication.GetSequencePoints(msgGSP.modulePath, msgGSP.assemblyName,
                                                                  msgGSP.functionToken, out origPoints);
@@ -92,6 +105,11 @@ namespace OpenCover.Framework.Communication
                 case MSG_Type.MSG_GetBranchPoints:
                     {
                         var msgGBP = _marshalWrapper.PtrToStructure<MSG_GetBranchPoints_Request>(pinnedMemory);
+                        if (!String.IsNullOrEmpty(msgGBP.modulePath) && msgGBP.modulePath.StartsWith("@"))
+                        {
+                            msgGBP.modulePath = this._moduleLocator.LocateForAssembly(msgGBP.assemblyName);
+                        }
+
                         BranchPoint[] origPoints;
                         var responseCSP = new MSG_GetBranchPoints_Response();
                         _profilerCommunication.GetBranchPoints(msgGBP.modulePath, msgGBP.assemblyName,
