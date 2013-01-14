@@ -124,8 +124,6 @@ private:
     HRESULT AddSafeCuckooBody(ModuleID moduleId);
     mdMemberRef RegisterSafeCuckooMethod(ModuleID moduleId);
     void InstrumentMethod(ModuleID moduleId, Method& method,  std::vector<SequencePoint> seqPoints, std::vector<BranchPoint> brPoints);
-	bool GetFileExists(WCHAR* pFileName);
-	std::wstring m_symbolDir;
 
 public:
     static CCodeCoverage* g_pProfiler;

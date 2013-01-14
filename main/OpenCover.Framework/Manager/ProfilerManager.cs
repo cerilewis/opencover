@@ -45,7 +45,7 @@ namespace OpenCover.Framework.Manager
             _memoryManager = memoryManager;
         }
 
-        public void RunProcess(Action<Action<StringDictionary>> process, bool isService, String symbolDir)
+        public void RunProcess(Action<Action<StringDictionary>> process, bool isService)
         {
             var key = Guid.NewGuid().GetHashCode().ToString("X");
             var processMgmt = new AutoResetEvent(false);
@@ -84,7 +84,6 @@ namespace OpenCover.Framework.Manager
                             dictionary["Cor_Enable_Profiling"] = "1";
                             dictionary["CoreClr_Profiler"] = "{1542C21D-80C3-45E6-A56C-A9C1E4BEB7B8}";
                             dictionary["CoreClr_Enable_Profiling"] = "1";
-                            dictionary["OpenCover_Profiler_SymbolDir"] = symbolDir;
                             environmentKeyRead.Set();
                         });
                     }

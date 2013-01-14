@@ -82,7 +82,7 @@ namespace OpenCover.Console
                                                    {
                                                        returnCode = RunProcess(parser, environment);
                                                    }
-                                               }, parser.Service, symbolDir);
+                                               }, parser.Service);
 
                         DisplayResults(persistance, parser, logger);
 

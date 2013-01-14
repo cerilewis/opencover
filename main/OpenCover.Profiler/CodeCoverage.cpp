@@ -74,11 +74,6 @@ HRESULT STDMETHODCALLTYPE CCodeCoverage::Initialize(
 
     m_useOldStyle = (tstring(instrumentation) == _T("oldSchool"));
 
-	TCHAR symbolDir[1024] = {0};
-	::GetEnvironmentVariable(_T("OpenCover_Profiler_SymbolDir"), symbolDir, 1024);
-	ATLTRACE(_T("    ::Initialize(...) => symbolDir = %s"), symbolDir);
-	m_symbolDir = std::wstring(symbolDir);
-
     if (!m_host.Initialise(key, ns))
     {
         RELTRACE(_T("    ::Initialize => Failed to initialise the profiler communications -> GetLastError() => %d"), ::GetLastError());
@@ -273,19 +268,6 @@ HRESULT STDMETHODCALLTYPE CCodeCoverage::ModuleAttachedToAssembly(
 {
     std::wstring modulePath = GetModulePath(moduleId);
     std::wstring assemblyName = GetAssemblyName(assemblyId);
-	if (modulePath.length() == 0 && m_symbolDir.length()>0)
-	{
-		wchar_t buf[512];
-		swprintf_s(buf, 512, _T("%s%s.dll"), W2CT(m_symbolDir.c_str()), W2CT(assemblyName.c_str()));
-		std::wstring testPath = std::wstring(buf);
-
-		//ATLTRACE(_T("Test Path %s"), W2CT(testPath.c_str()));
-		if (GetFileExists((LPWSTR)testPath.c_str()))
-		{
-			modulePath.assign(testPath);
-			ATLTRACE(_T("::ModuleAttachedToAssembly(...) updated modulePath"));
-		}
-	}
 
 	ATLTRACE(_T("::ModuleAttachedToAssembly(...) => (%X => %s, %X => %s)"), 
         moduleId, W2CT(modulePath.c_str()), 
@@ -293,9 +275,6 @@ HRESULT STDMETHODCALLTYPE CCodeCoverage::ModuleAttachedToAssembly(
 	
     m_allowModules[modulePath] = m_host.TrackAssembly((LPWSTR)modulePath.c_str(), (LPWSTR)assemblyName.c_str());
     m_allowModulesAssemblyMap[modulePath] = assemblyName;
-
-	/*DWORD attributes = GetFileAttributes(testPath.c_str());
-	ATLTRACE(_T("Attributes %X"), attributes);*/
 
     return S_OK; 
 }
@@ -480,16 +459,6 @@ HRESULT STDMETHODCALLTYPE CCodeCoverage::JITCompilationStarted(
     }
     
     return S_OK; 
-}
-
-bool CCodeCoverage::GetFileExists(WCHAR* pFileName)
-{
-	DWORD attributes = GetFileAttributes(pFileName);
-	if (attributes == INVALID_FILE_ATTRIBUTES)
-	{
-		return 0;
-	}
-	return 1;
 }
 
 void CCodeCoverage::InstrumentMethod(ModuleID moduleId, Method& method,  std::vector<SequencePoint> seqPoints, std::vector<BranchPoint> brPoints)
