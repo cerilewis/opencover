@@ -145,6 +145,14 @@ public:
     virtual HRESULT STDMETHODCALLTYPE JITCompilationStarted( 
         /* [in] */ FunctionID functionId,
         /* [in] */ BOOL fIsSafeToBlock);
+
+    virtual HRESULT STDMETHODCALLTYPE ObjectAllocated( 
+        /* [in] */ ObjectID objectId,
+        /* [in] */ ClassID classId);
+
+    virtual HRESULT STDMETHODCALLTYPE ClassLoadFinished( 
+        /* [in] */ ClassID classId,
+        /* [in] */ HRESULT hrStatus);
 };
 
 OBJECT_ENTRY_AUTO(__uuidof(CodeCoverage), CCodeCoverage)
