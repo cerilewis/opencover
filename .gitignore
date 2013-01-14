@@ -47,3 +47,4 @@
 /main/OpenCover.sln.DotSettings.user
 /tools/NUnit-2.6.0.12051
 *.suo
+*.ncrunchsolution
