@@ -9,11 +9,14 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Authentication;
+using System.Security.Principal;
 using System.ServiceProcess;
 using OpenCover.Framework;
 using OpenCover.Framework.Manager;
 using OpenCover.Framework.Persistance;
 using OpenCover.Framework.Service;
+using OpenCover.Framework.Utility;
 using log4net;
 using log4net.Core;
 
@@ -44,11 +47,23 @@ namespace OpenCover.Console
                 string outputFile;
                 if (!GetFullOutputFile(parser, out outputFile)) return returnCodeOffset + 1;
 
-                using (var memoryManager = new MemoryManager())
+                IPerfCounters perfCounter = new NullPerfCounter();
+                if (parser.EnablePerformanceCounters)
                 {
-                    var container = new Bootstrapper(logger);
+                    if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+                    {
+                        perfCounter = new PerfCounters();
+                    }
+                    else
+                    {
+                        throw  new InvalidCredentialException("You must be running as an Administrator to enable performance counters.");
+                    }
+                }
+
+                using (var container = new Bootstrapper(logger))
+                {
                     var persistance = new FilePersistance(parser, logger);
-                    container.Initialise(filter, parser, persistance, memoryManager);
+                    container.Initialise(filter, parser, persistance, perfCounter);
                     persistance.Initialise(outputFile);
                     var registered = false;
 
@@ -59,7 +74,7 @@ namespace OpenCover.Console
                             ProfilerRegistration.Register(parser.UserRegistration);
                             registered = true;
                         }
-                        var harness = (IProfilerManager)container.Container.Resolve(typeof(IProfilerManager), null);
+                        var harness = container.Resolve<IProfilerManager>();
 
                         var symbolDir = string.Empty;
                         if (!string.IsNullOrEmpty(parser.SymbolDir))
@@ -98,6 +113,8 @@ namespace OpenCover.Console
                             ProfilerRegistration.Unregister(parser.UserRegistration);
                     }
                 }
+
+                perfCounter.ResetCounters();
             }
             catch (Exception ex)
             {
@@ -210,16 +227,11 @@ namespace OpenCover.Console
             var altTotalClasses = 0;
             var altVisitedClasses = 0;
 
-            var totalSeqPoint = 0;
-            var visitedSeqPoint = 0;
             var totalMethods = 0;
             var visitedMethods = 0;
 
             var altTotalMethods = 0;
             var altVisitedMethods = 0;
-
-            var totalBrPoint = 0;
-            var visitedBrPoint = 0;
 
             var unvisitedClasses = new List<string>();
             var unvisitedMethods = new List<string>();
@@ -272,35 +284,28 @@ namespace OpenCover.Console
                         {
                             altVisitedMethods += 1;
                         }
-
-                        totalSeqPoint += method.SequencePoints.Count();
-                        visitedSeqPoint += method.SequencePoints.Count(pt => pt.VisitCount != 0);
-
-                        totalBrPoint += method.BranchPoints.Count();
-                        visitedBrPoint += method.BranchPoints.Count(pt => pt.VisitCount != 0);
                     }
                 }
             }
 
             if (totalClasses > 0)
-            {
-
+            {           
                 logger.InfoFormat("Visited Classes {0} of {1} ({2})", visitedClasses,
-                                  totalClasses, (double)visitedClasses * 100.0 / (double)totalClasses);
+                                  totalClasses, Math.Round(visitedClasses * 100.0 / totalClasses, 2));
                 logger.InfoFormat("Visited Methods {0} of {1} ({2})", visitedMethods,
-                                  totalMethods, (double)visitedMethods * 100.0 / (double)totalMethods);
-                logger.InfoFormat("Visited Points {0} of {1} ({2})", visitedSeqPoint,
-                                  totalSeqPoint, (double)visitedSeqPoint * 100.0 / (double)totalSeqPoint);
-                logger.InfoFormat("Visited Branches {0} of {1} ({2})", visitedBrPoint,
-                                  totalBrPoint, (double)visitedBrPoint * 100.0 / (double)totalBrPoint);
+                                  totalMethods, Math.Round(visitedMethods * 100.0 / totalMethods, 2));
+                logger.InfoFormat("Visited Points {0} of {1} ({2})", CoverageSession.Summary.VisitedSequencePoints,
+                                  CoverageSession.Summary.NumSequencePoints, CoverageSession.Summary.SequenceCoverage);
+                logger.InfoFormat("Visited Branches {0} of {1} ({2})", CoverageSession.Summary.VisitedBranchPoints,
+                                  CoverageSession.Summary.NumBranchPoints, CoverageSession.Summary.BranchCoverage);
 
                 logger.InfoFormat("");
                 logger.InfoFormat(
                     "==== Alternative Results (includes all methods including those without corresponding source) ====");
                 logger.InfoFormat("Alternative Visited Classes {0} of {1} ({2})", altVisitedClasses,
-                                  altTotalClasses, (double)altVisitedClasses * 100.0 / (double)altTotalClasses);
+                                  altTotalClasses, Math.Round(altVisitedClasses * 100.0 / altTotalClasses, 2));
                 logger.InfoFormat("Alternative Visited Methods {0} of {1} ({2})", altVisitedMethods,
-                                  altTotalMethods, (double)altVisitedMethods * 100.0 / (double)altTotalMethods);
+                                  altTotalMethods, Math.Round(altVisitedMethods * 100.0 / altTotalMethods, 2));
 
                 if (parser.ShowUnvisited)
                 {

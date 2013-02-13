@@ -9,9 +9,8 @@
 #include "SharedMemory.h"
 #include "Messages.h"
 
-#include <ppl.h>
-#include <concurrent_queue.h>
 #include <exception>
+#include <concurrent_vector.h>
 
 /// <summary>Handles communication back to the profiler host</summary>
 /// <remarks>Currently this is handled by using the WebServices API</remarks>
@@ -29,13 +28,14 @@ public:
     bool GetPoints(mdToken functionToken, WCHAR* pModulePath, WCHAR* pAssemblyName, std::vector<SequencePoint> &seqPoints, std::vector<BranchPoint> &brPoints);
     bool TrackMethod(mdToken functionToken, WCHAR* pModulePath, WCHAR* pAssemblyName, ULONG &uniqueId);
     bool AllocateBuffer(LONG bufferSize, ULONG &bufferId);
-	inline void AddVisitPoint(ULONG uniqueId) { if (uniqueId!=0) { AddVisitPointToBuffer(uniqueId, IT_VisitPoint); }}
-	inline void AddTestEnterPoint(ULONG uniqueId) { if (uniqueId!=0) { AddVisitPointToBuffer(uniqueId, IT_MethodEnter); }}
-	inline void AddTestLeavePoint(ULONG uniqueId) { if (uniqueId!=0) { AddVisitPointToBuffer(uniqueId, IT_MethodLeave); }}
-	inline void AddTestTailcallPoint(ULONG uniqueId) { if (uniqueId!=0) { AddVisitPointToBuffer(uniqueId, IT_MethodTailcall); }}
-    void AddVisitPointToBuffer(ULONG uniqueId, ULONG msgType);
+	inline void AddTestEnterPoint(ULONG uniqueId) { AddVisitPointToBuffer(uniqueId, IT_MethodEnter); }
+	inline void AddTestLeavePoint(ULONG uniqueId) { AddVisitPointToBuffer(uniqueId, IT_MethodLeave); }
+	inline void AddTestTailcallPoint(ULONG uniqueId) { AddVisitPointToBuffer(uniqueId, IT_MethodTailcall); }
+	inline void AddVisitPointWithThreshold(ULONG uniqueId, ULONG threshold) { AddVisitPointToBuffer(uniqueId, IT_VisitPoint, threshold); }
+	inline void Resize(ULONG minSize) { m_thresholds.grow_to_at_least(minSize); }
 
 private:
+    void AddVisitPointToBuffer(ULONG uniqueId, ULONG msgType, ULONG threshold = 0);
     void SendVisitPoints();
     bool GetSequencePoints(mdToken functionToken, WCHAR* pModulePath, WCHAR* pAssemblyName, std::vector<SequencePoint> &points);
     bool GetBranchPoints(mdToken functionToken, WCHAR* pModulePath, WCHAR* pAssemblyName, std::vector<BranchPoint> &points);
@@ -62,7 +62,11 @@ private:
     MSG_SendVisitPoints_Request *m_pVisitPoints;
 
 private:
+	Concurrency::concurrent_vector<ULONG> m_thresholds;
+
+private:
     ATL::CComAutoCriticalSection m_critResults;
+    ATL::CComAutoCriticalSection m_critComms;
     bool hostCommunicationActive;
 
 private:
@@ -70,10 +74,12 @@ private:
     class CommunicationException : std::exception
     {
         DWORD dwReason;
+        DWORD dwTimeout;
     public:
-        CommunicationException(DWORD reason) {dwReason = reason;}
+		CommunicationException(DWORD reason, DWORD timeout) {dwReason = reason; dwTimeout = timeout;}
 
         DWORD getReason() {return dwReason;}
+        DWORD getTimeout() {return dwTimeout;}
     };
 
 };

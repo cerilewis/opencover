@@ -27,6 +27,9 @@ namespace OpenCover.Test.Framework
             Assert.IsFalse(parser.Service);
             Assert.IsFalse(parser.ShowUnvisited);
             Assert.IsFalse(parser.MergeByHash);
+            Assert.IsFalse(parser.EnablePerformanceCounters);
+            Assert.IsFalse(parser.TraceByTest);
+
         }
 
         [Test]
@@ -219,6 +222,20 @@ namespace OpenCover.Test.Framework
         }
 
         [Test]
+        public void HandlesFilterFileArgumentsWithEmptyArgument()
+        {
+            // arrange  
+            var parser = new CommandLineParser(new[] { "-filterfile:XYZABC.LOG", RequiredArgs });
+
+            // act
+            parser.ExtractAndValidateArguments();
+
+            // assert
+            Assert.AreEqual("XYZABC.LOG", parser.FilterFile);
+
+        }
+
+        [Test]
         public void HandlesMergeByHashArgument()
         {
             // arrange  
@@ -279,6 +296,29 @@ namespace OpenCover.Test.Framework
             var parser = new CommandLineParser(new[] { "-returntargetcode:wibble", RequiredArgs });
 
             // act, assert
+            Assert.Throws<InvalidOperationException>(parser.ExtractAndValidateArguments);
+        }
+
+        [Test]
+        public void HandlesThresholdArgument_WithValue()
+        {
+            // arrange  
+            var parser = new CommandLineParser(new[] { "-threshold:127", RequiredArgs });
+
+            // act
+            parser.ExtractAndValidateArguments();
+
+            // assert
+            Assert.AreEqual(127, parser.Threshold);
+        }
+
+        [Test]
+        public void InvalidThresholdArgumentValue_ThrowsException()
+        {
+            // arrange  
+            var parser = new CommandLineParser(new[] { "-threshold:wibble", RequiredArgs });
+
+            // assert
             Assert.Throws<InvalidOperationException>(parser.ExtractAndValidateArguments);
         }
 
@@ -356,6 +396,7 @@ namespace OpenCover.Test.Framework
             Assert.AreEqual("wibble", parser.TestFilters[0]);
             Assert.AreEqual("wobble", parser.TestFilters[1]);
             Assert.AreEqual("woop", parser.TestFilters[2]);
+            Assert.IsTrue(parser.TraceByTest);
         }
 
         [Test]
@@ -405,6 +446,19 @@ namespace OpenCover.Test.Framework
 
             // assert
             Assert.IsTrue(parser.OldStyleInstrumentation);
+        }
+
+        [Test]
+        public void Detects_EnablePerformanceCounters_Argument()
+        {
+            // arrange  
+            var parser = new CommandLineParser(new[] { "-enableperformancecounters", RequiredArgs });
+
+            // act
+            parser.ExtractAndValidateArguments();
+
+            // assert
+            Assert.IsTrue(parser.EnablePerformanceCounters);
         }
 
         [Test]

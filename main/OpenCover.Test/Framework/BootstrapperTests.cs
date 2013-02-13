@@ -11,6 +11,7 @@ using OpenCover.Framework.Model;
 using OpenCover.Framework.Persistance;
 using OpenCover.Framework.Service;
 using OpenCover.Framework.Symbols;
+using OpenCover.Framework.Utility;
 using log4net;
 
 namespace OpenCover.Test.Framework
@@ -25,18 +26,20 @@ namespace OpenCover.Test.Framework
             var mockFilter = new Mock<IFilter>();
             var mockCommandLine = new Mock<ICommandLine>();
             var mockPersistance = new Mock<IPersistance>();
+            var mockPerf = new Mock<IPerfCounters>();
             var mockLogger = new Mock<ILog>();
-            var mockManager = new Mock<IMemoryManager>();
 
-            var bootstrapper = new Bootstrapper(mockLogger.Object);
-            bootstrapper.Initialise(mockFilter.Object, mockCommandLine.Object, mockPersistance.Object, mockManager.Object);
+            using (var bootstrapper = new Bootstrapper(mockLogger.Object))
+            {
+                bootstrapper.Initialise(mockFilter.Object, mockCommandLine.Object,
+                                        mockPersistance.Object, mockPerf.Object);
 
-            // act
-            var instance = bootstrapper.Container.Resolve(typeof(IProfilerCommunication), null);
+                // act
+                var instance = bootstrapper.Resolve<IProfilerCommunication>();
 
-            // assert
-            Assert.IsNotNull(instance);
-
+                // assert
+                Assert.IsNotNull(instance);
+            }
         }
 
         [Test]
@@ -46,18 +49,22 @@ namespace OpenCover.Test.Framework
             var mockFilter = new Mock<IFilter>();
             var mockCommandLine = new Mock<ICommandLine>();
             var mockPersistance = new Mock<IPersistance>();
+            var mockPerf = new Mock<IPerfCounters>();
             var mockLogger = new Mock<ILog>();
-            var mockManager = new Mock<IMemoryManager>();
 
-            var bootstrapper = new Bootstrapper(mockLogger.Object);
-            bootstrapper.Initialise(mockFilter.Object, mockCommandLine.Object, mockPersistance.Object, mockManager.Object);
+            using (var bootstrapper = new Bootstrapper(mockLogger.Object))
+            {
+                bootstrapper.Initialise(mockFilter.Object, mockCommandLine.Object,
+                                        mockPersistance.Object, mockPerf.Object);
 
-            // act
-            var instance = bootstrapper.Container.Resolve(typeof(IInstrumentationModelBuilderFactory), null);
+                // act
+                var instance = bootstrapper.Resolve<IInstrumentationModelBuilderFactory>();
 
-            // assert
-            Assert.IsNotNull(instance);
+                // assert
+                Assert.IsNotNull(instance);
 
+                Assert.AreEqual(2, instance.MethodStrategies.Count());
+            }
         }
     }
 }

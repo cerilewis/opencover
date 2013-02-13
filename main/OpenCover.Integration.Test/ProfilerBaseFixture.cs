@@ -9,6 +9,7 @@ using NUnit.Framework;
 using OpenCover.Framework;
 using OpenCover.Framework.Manager;
 using OpenCover.Framework.Persistance;
+using OpenCover.Framework.Utility;
 using log4net;
 
 namespace OpenCover.Integration.Test
@@ -32,7 +33,6 @@ namespace OpenCover.Integration.Test
         private Mock<ICommandLine> _commandLine;
         private Mock<ILog> _logger;
         private IPersistance _persistance;
-        private IMemoryManager _manager;
 
         protected string TestTarget { get; set; }
  
@@ -52,7 +52,6 @@ namespace OpenCover.Integration.Test
             var filePersistance = new BasePersistanceStub(_commandLine.Object, _logger.Object);
             _persistance = filePersistance;
 
-            _manager = new MemoryManager();
         }
 
         protected void ExecuteProfiler32(Action<ProcessStartInfo> testProcess)
@@ -65,8 +64,8 @@ namespace OpenCover.Integration.Test
         private void ExecuteProfiler(Action<ProcessStartInfo> testProcess)
         {
             var bootstrapper = new Bootstrapper(_logger.Object);
-            bootstrapper.Initialise(_filter, _commandLine.Object, _persistance, _manager);
-            var harness = (IProfilerManager)bootstrapper.Container.Resolve(typeof(IProfilerManager), null);
+            bootstrapper.Initialise(_filter, _commandLine.Object, _persistance, new NullPerfCounter());
+            var harness = bootstrapper.Resolve<IProfilerManager>();
 
             harness.RunProcess((environment) =>
             {

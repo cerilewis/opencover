@@ -9,7 +9,7 @@
 	<property name="program.files.x86" value="${environment::get-variable('ProgramFiles(x86)')}" if="${environment::variable-exists('ProgramFiles(x86)')}"/>
 	<property name="program.files.x86" value="${environment::get-variable('ProgramFiles')}" unless="${property::exists('program.files.x86')}" />
 	<property name="program.files" value="${environment::get-variable('ProgramFiles')}" />
-	<property name="netfx.tools.folder" value="${program.files.x86}/Microsoft SDKs\Windows\v7.0A\Bin\NETFX 4.0 Tools" />
+	<property name="netfx.tools.folder" value="${program.files.x86}/Microsoft SDKs\Windows\v8.0A\Bin\NETFX 4.0 Tools" />
 	<property name="netfx.folder" value="${environment::get-variable('SystemRoot')}/Microsoft.NET" />
 	<property name="netfx.framework.folder" value="${netfx.folder}/Framework" if="${directory::exists(netfx.folder + '/Framework')}" />
 	<property name="netfx.framework.folder" value="${netfx.folder}/Framework64" if="${directory::exists(netfx.folder + '/Framework64')}" />
@@ -34,8 +34,8 @@
 		<call target="build-all-platforms" />
 	</target>
 	
-	<target name="create-release" depends="get-version-number, build-all-platforms, build-installer, nuget-package, create-zip-package">
-        <move file="${solution.folder}/bin/installer/opencover.msi" 
+	<target name="create-release" depends="get-version-number, build-release-platforms, nuget-package, create-zip-package">
+        <move file="${solution.folder}/OpenCover.Installer/bin/Release/opencover.installer.msi" 
             tofile="${solution.folder}/bin/installer/opencover.${buildnumber.major}.${buildnumber.minor}.${buildnumber.build}.msi" />
         <move file="${solution.folder}/bin/zip/opencover.zip" 
             tofile="${solution.folder}/bin/zip/opencover.${buildnumber.major}.${buildnumber.minor}.${buildnumber.build}.zip" />

@@ -35,8 +35,18 @@ namespace OpenCover.Framework
         bool ShowUnvisited { get; }
 
         /// <summary>
-        /// 
+        /// Hide skipped methods from the report
         /// </summary>
         List<SkippedMethod> HideSkipped { get; }
+
+        /// <summary>
+        /// Set the threshold i.e. max visit count reporting
+        /// </summary>
+        ulong Threshold { get; }
+
+        /// <summary>
+        /// Set when tracing coverage by test has been enabled
+        /// </summary>
+        bool TraceByTest { get; }
     }
 }
